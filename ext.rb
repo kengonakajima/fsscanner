@@ -22,11 +22,14 @@ def parse(l)
   return [name,size,ext]
 end
 
+
+
 infile = "find.out"
 
 extcounts = Hash.new(0)
 extsizes = Hash.new(0)
 extlists = Hash.new()  # hash table of an array of file names
+extlogs = Hash.new() # hash table of an array of find outputs
 filesizes = Hash.new()
 
 cnt=0
@@ -37,17 +40,21 @@ File.open(infile).read.split("\n").each do |line|
   extsizes[ext] += size 
   extlists[ext] = [] if extlists[ext] == nil
   extlists[ext].push(name)
+  extlogs[ext] = [] if extlogs[ext] == nil
+  extlogs[ext].push(line)
   filesizes[name] = size
   
   cnt+=1
   print(".") if cnt%10000==0
 
-  break if cnt == 200000 
+#  break if cnt == 300000 
 end
 
 exts = extsizes.keys
 exts.sort! do |a,b|
-  extsizes[a] <=> extsizes[b]
+  avg_a = extsizes[a] / extcounts[a]
+  avg_b = extsizes[b] / extcounts[b]
+  avg_a <=> avg_b
 end
   
 exts.each do |e|
@@ -57,3 +64,39 @@ exts.each do |e|
 end
 
 
+to_check = [ "JPG", "jpg", "MOV", "pdf", "doc","docx","png","PNG", "m4a","wav","WAV","mp4","mov","MP4","flv","avi","AVI","FLV" ]
+
+$skips = [ "Applications" ]
+
+def to_skip(fn)
+  $skips.each do |sk|
+    return true if fn.include?(sk)
+  end
+  return false
+end
+
+to_check.each do |e|
+  print "dupcheck for #{e}:\n"
+  
+  files = extlists[e]
+  next if !files
+  
+  files.each do |f_a|
+    next if to_skip(f_a)
+    
+    sz_a = filesizes[f_a]
+    print "hoge: #{f_a}\n" if sz_a == nil
+    next if sz_a < 1024*16
+    
+    files.each do |f_b|
+      sz_b = filesizes[f_b]
+      if f_a != f_b and sz_a == sz_b then
+        fa=f_a.sub(" ","\\ ")
+        fb=f_b.sub(" ","\\ ")
+        print "#{sz_a} #{fa} #{fb}\n"
+        break
+      end
+    end
+  end
+  print "done\n"
+end
