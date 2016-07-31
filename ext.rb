@@ -24,16 +24,36 @@ end
 
 infile = "find.out"
 
-exts = Hash.new(0)
+extcounts = Hash.new(0)
 extsizes = Hash.new(0)
+extlists = Hash.new()  # hash table of an array of file names
+filesizes = Hash.new()
 
+cnt=0
 File.open(infile).read.split("\n").each do |line|
   name,size,ext = parse(line)
-  exts[ext] += 1 if ext
-  extsizes[ext] += size
+  next if ext==nil
+  extcounts[ext] += 1 
+  extsizes[ext] += size 
+  extlists[ext] = [] if extlists[ext] == nil
+  extlists[ext].push(name)
+  filesizes[name] = size
+  
+  cnt+=1
+  print(".") if cnt%10000==0
+
+  break if cnt == 200000 
 end
 
-exts.keys.each do |e|
-  print extsizes[e], " ", exts[e], " ", e, "\n"
+exts = extsizes.keys
+exts.sort! do |a,b|
+  extsizes[a] <=> extsizes[b]
 end
+  
+exts.each do |e|
+#  print extsizes[e], " ", extcounts[e], " ", e, "\n"
+  avg = extsizes[e] / extcounts[e]
+  print extsizes[e], " ", extcounts[e], " ", extlists[e].size, " ", avg, " ", e, "\n" 
+end
+
 
